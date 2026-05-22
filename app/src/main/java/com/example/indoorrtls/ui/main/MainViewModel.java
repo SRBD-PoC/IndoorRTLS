@@ -1,6 +1,6 @@
 package com.example.indoorrtls.ui.main;
 
-import android.net.wifi.ScanResult;
+import android.bluetooth.le.ScanResult;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -10,12 +10,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainViewModel extends ViewModel {
-    private final MutableLiveData<List<ScanResult>> _scanResults = new MutableLiveData<>(new ArrayList<>());
-    public LiveData<List<ScanResult>> getScanResults() {
-        return _scanResults;
+    private final MutableLiveData<List<android.net.wifi.ScanResult>> _wifiScanResults = new MutableLiveData<>(new ArrayList<>());
+    public LiveData<List<android.net.wifi.ScanResult>> getWifiScanResults() {
+        return _wifiScanResults;
     }
 
-    public void updateScanResults(List<ScanResult> results) {
-        _scanResults.setValue(results);
+    public void updateWifiScanResults(List<android.net.wifi.ScanResult> results) {
+        _wifiScanResults.setValue(results);
+    }
+
+    private final MutableLiveData<List<ScanResult>> _bluetoothScanResults = new MutableLiveData<>(new ArrayList<>());
+    public LiveData<List<ScanResult>> getBluetoothScanResults() {
+        return _bluetoothScanResults;
+    }
+
+    public void updateBluetoothScanResults(List<ScanResult> results) {
+        _bluetoothScanResults.setValue(results);
     }
 }
