@@ -1,14 +1,19 @@
 package com.example.indoorrtls.scanner;
 
+import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.Looper;
 
+import androidx.core.app.ActivityCompat;
+
+import com.example.indoorrtls.utils.AppContextUtils;
 import com.example.indoorrtls.utils.PermissionUtils;
 
 import java.util.List;
@@ -81,6 +86,16 @@ public class WifiScanner {
     }
 
     private void handleSuccess() {
+        if (ActivityCompat.checkSelfPermission(AppContextUtils.getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
         List<ScanResult> results = wifiManager.getScanResults();
         listener.onResultsAvailable(results);
         
