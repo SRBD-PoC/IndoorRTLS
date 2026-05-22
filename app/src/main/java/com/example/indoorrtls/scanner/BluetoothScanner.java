@@ -1,14 +1,20 @@
 package com.example.indoorrtls.scanner;
 
+import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.Looper;
 
+import androidx.annotation.RequiresPermission;
+import androidx.core.app.ActivityCompat;
+
+import com.example.indoorrtls.utils.AppContextUtils;
 import com.example.indoorrtls.utils.PermissionUtils;
 
 import java.util.ArrayList;
@@ -73,6 +79,16 @@ public class BluetoothScanner {
         if (bluetoothLeScanner != null) {
             isScanning = true;
             currentResults.clear();
+            if (ActivityCompat.checkSelfPermission(AppContextUtils.getContext(), Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                return;
+            }
             bluetoothLeScanner.startScan(scanCallback);
             // Periodically report results to the listener
             handler.post(reportResultsRunnable);
@@ -83,6 +99,16 @@ public class BluetoothScanner {
         if (!isScanning) return;
         isScanning = false;
         if (bluetoothLeScanner != null && bluetoothAdapter.isEnabled()) {
+            if (ActivityCompat.checkSelfPermission(AppContextUtils.getContext(), Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                return;
+            }
             bluetoothLeScanner.stopScan(scanCallback);
         }
         handler.removeCallbacks(reportResultsRunnable);
