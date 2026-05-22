@@ -1,6 +1,6 @@
 package com.example.indoorrtls.ui.main;
 
-import android.net.wifi.ScanResult;
+import android.bluetooth.le.ScanResult;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,16 +17,15 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.indoorrtls.R;
-import com.example.indoorrtls.scanner.WifiScanner;
-import com.example.indoorrtls.utils.PermissionUtils;
+import com.example.indoorrtls.scanner.BluetoothScanner;
 
 import java.util.List;
 
-public class MainFragment extends Fragment implements WifiScanner.OnScanResultListener {
+public class BluetoothFragment extends Fragment implements BluetoothScanner.OnBluetoothScanResultListener {
 
     private MainViewModel mViewModel;
-    private WifiAdapter adapter;
-    private WifiScanner wifiScanner;
+    private BluetoothAdapter adapter;
+    private BluetoothScanner bluetoothScanner;
 
     private final ActivityResultLauncher<String[]> requestPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), result -> {
@@ -39,70 +38,70 @@ public class MainFragment extends Fragment implements WifiScanner.OnScanResultLi
                 }
 
                 if (allGranted) {
-                    wifiScanner.performScan();
+                    bluetoothScanner.start();
                 } else {
-                    Toast.makeText(getContext(), "Permissions denied. Cannot scan WiFi.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Permissions denied. Cannot scan Bluetooth.", Toast.LENGTH_SHORT).show();
                 }
             });
 
-    public static MainFragment newInstance() {
-        return new MainFragment();
+    public static BluetoothFragment newInstance() {
+        return new BluetoothFragment();
     }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mViewModel = new ViewModelProvider(this).get(MainViewModel.class);
-        wifiScanner = new WifiScanner(requireContext(), this);
+        mViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
+        bluetoothScanner = new BluetoothScanner(requireContext(), this);
     }
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_main, container, false);
+        View view = inflater.inflate(R.layout.fragment_bluetooth, container, false);
 
         setupRecyclerView(view);
-        view.findViewById(R.id.scanFab).setOnClickListener(v -> wifiScanner.performScan());
+        view.findViewById(R.id.scanFab).setOnClickListener(v -> bluetoothScanner.start());
 
         return view;
     }
 
     private void setupRecyclerView(View view) {
-        RecyclerView recyclerView = view.findViewById(R.id.wifiList);
+        RecyclerView recyclerView = view.findViewById(R.id.bluetoothList);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        adapter = new WifiAdapter();
+        adapter = new BluetoothAdapter();
         recyclerView.setAdapter(adapter);
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        mViewModel.getScanResults().observe(getViewLifecycleOwner(), results -> adapter.setScanResults(results));
+        mViewModel.getBluetoothScanResults().observe(getViewLifecycleOwner(), results -> adapter.setScanResults(results));
     }
 
     @Override
     public void onStart() {
         super.onStart();
-        wifiScanner.start();
+        bluetoothScanner.start();
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        wifiScanner.stop();
+        bluetoothScanner.stop();
     }
 
-    // WifiScanner.OnScanResultListener Implementation
+    // BluetoothScanner.OnBluetoothScanResultListener Implementation
 
     @Override
     public void onResultsAvailable(List<ScanResult> results) {
-        mViewModel.updateScanResults(results);
+        mViewModel.updateBluetoothScanResults(results);
     }
 
     @Override
-    public void onScanFailed() {
-        // Log failure or show feedback if needed
+    public void onScanFailed(int errorCode) {
+        // Handle scan failure
     }
 
     @Override

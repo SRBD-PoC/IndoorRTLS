@@ -1,8 +1,13 @@
 <resources>
     <string name="app_name">IndoorRTLS</string>
     <string name="wifi_scanner">WiFi Scanner</string>
+    <string name="bluetooth_scanner">Bluetooth Scanner</string>
     <string name="scan_wifi">Scan WiFi</string>
+    <string name="scan_bluetooth">Scan Bluetooth</string>
     <string name="rssi_format">RSSI: %1$d dBm</string>
     <string name="frequency_format">%1$d MHz</string>
     <string name="hidden_network">[Hidden Network]</string>
+    <string name="nav_wifi">WiFi</string>
+    <string name="nav_bluetooth">Bluetooth</string>
+    <string name="unknown_device">Unknown Device</string>
 </resources>
