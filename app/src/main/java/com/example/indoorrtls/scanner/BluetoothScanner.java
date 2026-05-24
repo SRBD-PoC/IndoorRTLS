@@ -5,22 +5,35 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanFilter;
+import android.bluetooth.le.ScanRecord;
 import android.bluetooth.le.ScanResult;
+import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
-import androidx.annotation.RequiresPermission;
 import androidx.core.app.ActivityCompat;
 
 import com.example.indoorrtls.utils.AppContextUtils;
 import com.example.indoorrtls.utils.PermissionUtils;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Scans for BLE devices and tracks them.
+ * For RTLS nodes (devices running this app), it tracks them using a persistent Unique ID
+ * instead of the rotating MAC address to prevent "ghost" duplicates.
+ */
 public class BluetoothScanner {
+
+    private static final String TAG = "BluetoothScanner";
 
     public interface OnBluetoothScanResultListener {
         void onResultsAvailable(List<ScanResult> results);
@@ -35,39 +48,82 @@ public class BluetoothScanner {
     private final Handler handler = new Handler(Looper.getMainLooper());
 
     private boolean isScanning = false;
-    private final List<ScanResult> currentResults = new ArrayList<>();
+    // Map key: Either Persistent Unique ID (for RTLS nodes) or MAC Address (for regular devices)
+    private final Map<String, ScanResultTimestamp> currentResults = new ConcurrentHashMap<>();
+
+    private static class ScanResultTimestamp {
+        ScanResult result;
+        long timestamp;
+
+        ScanResultTimestamp(ScanResult result) {
+            this.result = result;
+            this.timestamp = System.currentTimeMillis();
+        }
+    }
 
     private final ScanCallback scanCallback = new ScanCallback() {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
             super.onScanResult(callbackType, result);
-            updateResults(result);
+            handleNewResult(result);
         }
 
         @Override
         public void onBatchScanResults(List<ScanResult> results) {
             super.onBatchScanResults(results);
             for (ScanResult result : results) {
-                updateResults(result);
+                handleNewResult(result);
             }
         }
+
+    private void handleNewResult(ScanResult result) {
+        String trackingId = getTrackingId(result);
+        if (trackingId != null) {
+            Log.v(TAG, "Scanned RTLS Node: " + trackingId + " RSSI: " + result.getRssi());
+            currentResults.put(trackingId, new ScanResultTimestamp(result));
+        }
+    }
 
         @Override
         public void onScanFailed(int errorCode) {
             super.onScanFailed(errorCode);
+            Log.e(TAG, "Scan failed with error code: " + errorCode);
             listener.onScanFailed(errorCode);
         }
     };
 
+    /**
+     * Extracts a stable ID for tracking from RTLS nodes.
+     * Returns null if the device is not an RTLS node.
+     */
+    private String getTrackingId(ScanResult result) {
+        ScanRecord record = result.getScanRecord();
+        if (record != null) {
+            byte[] data = record.getManufacturerSpecificData(0xFFFF);
+            if (data != null && data.length >= 4) {
+                StringBuilder sb = new StringBuilder("RTLS_");
+                for (int i = 0; i < 4; i++) {
+                    sb.append(String.format("%02X", data[i]));
+                }
+                return sb.toString();
+            }
+        }
+        return null;
+    }
+
     public BluetoothScanner(Context context, OnBluetoothScanResultListener listener) {
         this.context = context.getApplicationContext();
         BluetoothManager bluetoothManager = (BluetoothManager) this.context.getSystemService(Context.BLUETOOTH_SERVICE);
-        this.bluetoothAdapter = bluetoothManager.getAdapter();
+        this.bluetoothAdapter = (bluetoothManager != null) ? bluetoothManager.getAdapter() : null;
         this.listener = listener;
     }
 
     public void start() {
-        if (isScanning || bluetoothAdapter == null || !bluetoothAdapter.isEnabled()) return;
+        Log.d(TAG, "Starting scanner...");
+        if (isScanning || bluetoothAdapter == null || !bluetoothAdapter.isEnabled()) {
+            Log.w(TAG, "Cannot start scan: isScanning=" + isScanning + ", adapterEnabled=" + (bluetoothAdapter != null && bluetoothAdapter.isEnabled()));
+            return;
+        }
 
         String[] permissions = PermissionUtils.getBluetoothScanPermissions();
         if (!PermissionUtils.hasPermissions(context, permissions)) {
@@ -79,66 +135,67 @@ public class BluetoothScanner {
         if (bluetoothLeScanner != null) {
             isScanning = true;
             currentResults.clear();
-            if (ActivityCompat.checkSelfPermission(AppContextUtils.getContext(), Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                //    ActivityCompat#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for ActivityCompat#requestPermissions for more details.
+
+            // 1. Create a filter to ONLY see RTLS nodes at the hardware/OS level
+            List<ScanFilter> filters = new ArrayList<>();
+            // Using a zero-length mask to match any manufacturer data with ID 0xFFFF
+            filters.add(new ScanFilter.Builder()
+                    .setManufacturerData(0xFFFF, new byte[0], new byte[0])
+                    .build());
+
+            // 2. Set high frequency scan mode
+            ScanSettings settings = new ScanSettings.Builder()
+                    .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                    .build();
+
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
                 return;
             }
-            bluetoothLeScanner.startScan(scanCallback);
-            // Periodically report results to the listener
+
+            Log.d(TAG, "BLE Scan started with RTLS filters");
+            bluetoothLeScanner.startScan(filters, settings, scanCallback);
             handler.post(reportResultsRunnable);
+        } else {
+            Log.e(TAG, "BluetoothLeScanner is null");
         }
     }
 
     public void stop() {
         if (!isScanning) return;
+        Log.d(TAG, "Stopping scanner");
         isScanning = false;
         if (bluetoothLeScanner != null && bluetoothAdapter.isEnabled()) {
-            if (ActivityCompat.checkSelfPermission(AppContextUtils.getContext(), Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                //    ActivityCompat#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for ActivityCompat#requestPermissions for more details.
-                return;
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED) {
+                bluetoothLeScanner.stopScan(scanCallback);
             }
-            bluetoothLeScanner.stopScan(scanCallback);
         }
         handler.removeCallbacks(reportResultsRunnable);
-    }
-
-    private void updateResults(ScanResult result) {
-        synchronized (currentResults) {
-            int index = -1;
-            for (int i = 0; i < currentResults.size(); i++) {
-                if (currentResults.get(i).getDevice().getAddress().equals(result.getDevice().getAddress())) {
-                    index = i;
-                    break;
-                }
-            }
-            if (index != -1) {
-                currentResults.set(index, result);
-            } else {
-                currentResults.add(result);
-            }
-        }
     }
 
     private final Runnable reportResultsRunnable = new Runnable() {
         @Override
         public void run() {
             if (isScanning) {
-                synchronized (currentResults) {
-                    listener.onResultsAvailable(new ArrayList<>(currentResults));
+                long now = System.currentTimeMillis();
+                List<ScanResult> filteredList = new ArrayList<>();
+
+                // Cleanup old results (> 10 seconds)
+                int removedCount = 0;
+                Iterator<Map.Entry<String, ScanResultTimestamp>> it = currentResults.entrySet().iterator();
+                while (it.hasNext()) {
+                    Map.Entry<String, ScanResultTimestamp> entry = it.next();
+                    if (now - entry.getValue().timestamp > 10000) {
+                        it.remove();
+                        removedCount++;
+                    } else {
+                        filteredList.add(entry.getValue().result);
+                    }
                 }
-                handler.postDelayed(this, 2000); // Update every 2 seconds
+
+                if (removedCount > 0) Log.d(TAG, "Removed " + removedCount + " stale RTLS nodes");
+                Log.d(TAG, "Reporting " + filteredList.size() + " active RTLS nodes");
+                listener.onResultsAvailable(filteredList);
+                handler.postDelayed(this, 2000);
             }
         }
     };
