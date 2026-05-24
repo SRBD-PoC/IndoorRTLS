@@ -1,6 +1,7 @@
 package com.example.indoorrtls;
 
 import android.app.Application;
+
 import com.example.indoorrtls.utils.AppContextUtils;
 
 public class MainApplication extends Application {

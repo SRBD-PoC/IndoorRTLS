@@ -3,11 +3,11 @@ package com.example.indoorrtls.ui.main;
 import android.bluetooth.le.ScanResult;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.util.Log;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -16,10 +16,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.indoorrtls.R;
+import com.example.indoorrtls.databinding.FragmentBluetoothBinding;
 import com.example.indoorrtls.scanner.BluetoothAdvertiserManager;
 import com.example.indoorrtls.scanner.BluetoothScanner;
 import com.example.indoorrtls.utils.PermissionUtils;
@@ -30,9 +29,9 @@ public class BluetoothFragment extends Fragment implements BluetoothScanner.OnBl
 
     private static final String TAG = "BluetoothFragment";
     private MainViewModel mViewModel;
-    private BluetoothAdapter adapter;
     private BluetoothScanner bluetoothScanner;
     private BluetoothAdvertiserManager bluetoothAdvertiserManager;
+    private FragmentBluetoothBinding mBinding;
 
     private final ActivityResultLauncher<String[]> requestPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), result -> {
@@ -74,25 +73,14 @@ public class BluetoothFragment extends Fragment implements BluetoothScanner.OnBl
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_bluetooth, container, false);
-
-        setupRecyclerView(view);
-        view.findViewById(R.id.scanFab).setOnClickListener(v -> bluetoothScanner.start());
-
-        return view;
-    }
-
-    private void setupRecyclerView(View view) {
-        RecyclerView recyclerView = view.findViewById(R.id.bluetoothList);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        adapter = new BluetoothAdapter();
-        recyclerView.setAdapter(adapter);
+        mBinding = FragmentBluetoothBinding.bind(inflater.inflate(R.layout.fragment_bluetooth, container, false));
+        return mBinding.getRoot();
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        mViewModel.getBluetoothScanResults().observe(getViewLifecycleOwner(), results -> adapter.setScanResults(results));
+        mBinding.position.setMainViewModel(mViewModel, getViewLifecycleOwner());
     }
 
     @Override

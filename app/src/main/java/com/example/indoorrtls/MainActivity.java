@@ -7,11 +7,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-import androidx.fragment.app.Fragment;
 
 import com.example.indoorrtls.ui.main.BluetoothFragment;
-import com.example.indoorrtls.ui.main.WifiFragment;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -27,28 +24,10 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        BottomNavigationView bottomNav = findViewById(R.id.bottomNavigation);
-        bottomNav.setOnItemSelectedListener(item -> {
-            Fragment selectedFragment = null;
-            int itemId = item.getItemId();
-            if (itemId == R.id.nav_wifi) {
-                selectedFragment = WifiFragment.newInstance();
-            } else if (itemId == R.id.nav_bluetooth) {
-                selectedFragment = BluetoothFragment.newInstance();
-            }
-
-            if (selectedFragment != null) {
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, selectedFragment)
-                        .commit();
-            }
-            return true;
-        });
-
         // Set default fragment
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.container, WifiFragment.newInstance())
+                    .replace(R.id.container, BluetoothFragment.newInstance())
                     .commit();
         }
     }

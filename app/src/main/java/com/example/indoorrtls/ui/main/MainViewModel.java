@@ -10,16 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainViewModel extends ViewModel {
-    private final MutableLiveData<List<android.net.wifi.ScanResult>> _wifiScanResults = new MutableLiveData<>(new ArrayList<>());
-    public LiveData<List<android.net.wifi.ScanResult>> getWifiScanResults() {
-        return _wifiScanResults;
-    }
-
-    public void updateWifiScanResults(List<android.net.wifi.ScanResult> results) {
-        _wifiScanResults.setValue(results);
-    }
-
     private final MutableLiveData<List<ScanResult>> _bluetoothScanResults = new MutableLiveData<>(new ArrayList<>());
+
     public LiveData<List<ScanResult>> getBluetoothScanResults() {
         return _bluetoothScanResults;
     }

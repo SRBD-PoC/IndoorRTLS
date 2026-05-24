@@ -36,7 +36,9 @@ public class BluetoothScanner {
 
     public interface OnBluetoothScanResultListener {
         void onResultsAvailable(List<ScanResult> results);
+
         void onScanFailed(int errorCode);
+
         void onPermissionRequired(String[] permissions);
     }
 
