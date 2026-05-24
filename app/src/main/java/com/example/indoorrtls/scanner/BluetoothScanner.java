@@ -17,7 +17,6 @@ import android.util.Log;
 
 import androidx.core.app.ActivityCompat;
 
-import com.example.indoorrtls.utils.AppContextUtils;
 import com.example.indoorrtls.utils.PermissionUtils;
 
 import java.util.ArrayList;
@@ -76,14 +75,6 @@ public class BluetoothScanner {
             }
         }
 
-    private void handleNewResult(ScanResult result) {
-        String trackingId = getTrackingId(result);
-        if (trackingId != null) {
-            Log.v(TAG, "Scanned RTLS Node: " + trackingId + " RSSI: " + result.getRssi());
-            currentResults.put(trackingId, new ScanResultTimestamp(result));
-        }
-    }
-
         @Override
         public void onScanFailed(int errorCode) {
             super.onScanFailed(errorCode);
@@ -91,6 +82,14 @@ public class BluetoothScanner {
             listener.onScanFailed(errorCode);
         }
     };
+
+    private void handleNewResult(ScanResult result) {
+        String trackingId = getTrackingId(result);
+        if (trackingId != null) {
+            Log.v(TAG, "Scanned RTLS Node: " + trackingId + " RSSI: " + result.getRssi());
+            currentResults.put(trackingId, new ScanResultTimestamp(result));
+        }
+    }
 
     /**
      * Extracts a stable ID for tracking from RTLS nodes.

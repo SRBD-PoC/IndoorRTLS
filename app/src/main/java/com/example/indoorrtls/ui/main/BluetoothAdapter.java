@@ -152,7 +152,7 @@ public class BluetoothAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
 
         void bind(ScanResult result) {
             Context context = itemView.getContext();
-            
+
             String deviceName = null;
             if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
                 try {
@@ -178,13 +178,13 @@ public class BluetoothAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                 byte[] data = result.getScanRecord().getManufacturerSpecificData(0xFFFF);
                 if (data != null && data.length >= 4) {
                     remoteDataTable.setVisibility(View.VISIBLE);
-                    
+
                     // Identify RTLS device by its custom ID
                     String rtlsId = bytesToHex(data, 0, 4);
                     Log.v(TAG, "Binding node with RTLS ID: " + rtlsId);
                     nameText.setText("RTLS Node: " + rtlsId);
                     nameText.setTextColor(Color.parseColor("#1976D2")); // Blue color for RTLS nodes
-                    
+
                     populateRemoteTable(data);
                 } else {
                     remoteDataTable.setVisibility(View.GONE);
@@ -196,7 +196,7 @@ public class BluetoothAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
 
         private void populateRemoteTable(byte[] data) {
             remoteTableContent.removeAllViews();
-            
+
             // Add Header
             TableRow header = new TableRow(itemView.getContext());
             header.setBackgroundColor(Color.parseColor("#EEEEEE"));
@@ -208,16 +208,16 @@ public class BluetoothAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             // Data starts after 4-byte Device ID
             for (int i = 4; i + 4 < data.length; i += 5) {
                 TableRow row = new TableRow(itemView.getContext());
-                
+
                 // Index
                 row.addView(createCell(String.valueOf(((i - 4) / 5) + 1), false));
-                
+
                 // Node ID (Formatted)
                 row.addView(createCell(bytesToHex(data, i, 4), false));
-                
+
                 // RSSI
                 row.addView(createCell(String.valueOf(data[i + 4]), false));
-                
+
                 remoteTableContent.addView(row);
             }
         }

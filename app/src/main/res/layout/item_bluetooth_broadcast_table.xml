@@ -18,7 +18,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Currently Broadcasting (Top 3)"
+            android:text="Currently Broadcasting (Top 4)"
             android:textAppearance="?attr/textAppearanceTitleMedium"
             android:textColor="?attr/colorOnSurfaceVariant"
             android:textStyle="bold"
@@ -42,7 +42,7 @@
                     android:padding="4dp"
                     android:layout_width="wrap_content"/>
                 <TextView
-                    android:text="MAC Address"
+                    android:text="Node ID"
                     android:textStyle="bold"
                     android:padding="4dp"
                     android:layout_width="wrap_content"/>
@@ -54,8 +54,7 @@
                     android:gravity="end"/>
             </TableRow>
 
-            <!-- Rows will be added dynamically or pre-defined if fixed size -->
-            <!-- We'll add them dynamically in the adapter -->
+            <!-- Rows added dynamically in the adapter -->
 
         </TableLayout>
     </LinearLayout>
